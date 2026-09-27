@@ -135,10 +135,10 @@ describe('GlossaryTermClassBase', () => {
   });
 
   describe('getGlossaryTermDetailPageTabsIds', () => {
-    it('returns all 7 expected tab IDs', () => {
+    it('returns all 8 expected tab IDs', () => {
       const tabs = instance.getGlossaryTermDetailPageTabsIds();
 
-      expect(tabs).toHaveLength(7);
+      expect(tabs).toHaveLength(8);
     });
 
     it('includes OVERVIEW tab', () => {
@@ -159,6 +159,14 @@ describe('GlossaryTermClassBase', () => {
       const tabs = instance.getGlossaryTermDetailPageTabsIds();
 
       expect(tabs.find((t) => t.id === EntityTabs.ASSETS)).toBeDefined();
+    });
+
+    it('includes RECORD_BINDINGS tab', () => {
+      const tabs = instance.getGlossaryTermDetailPageTabsIds();
+
+      expect(
+        tabs.find((t) => t.id === EntityTabs.RECORD_BINDINGS)
+      ).toBeDefined();
     });
 
     it('includes ACTIVITY_FEED tab', () => {
@@ -207,6 +215,7 @@ describe('GlossaryTermClassBase', () => {
         EntityTabs.OVERVIEW,
         EntityTabs.GLOSSARY_TERMS,
         EntityTabs.ASSETS,
+        EntityTabs.RECORD_BINDINGS,
         EntityTabs.ACTIVITY_FEED,
         EntityTabs.RELATIONS_GRAPH,
         EntityTabs.CUSTOM_PROPERTIES,
