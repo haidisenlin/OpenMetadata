@@ -24,6 +24,7 @@ export const TAB_LABEL_MAP = {
   [EntityTabs.OVERVIEW]: 'label.overview',
   [EntityTabs.GLOSSARY_TERMS]: 'label.glossary-term-plural',
   [EntityTabs.ASSETS]: 'label.asset-plural',
+  [EntityTabs.RECORD_BINDINGS]: 'label.record-plural',
   [EntityTabs.ACTIVITY_FEED]: 'label.activity-feed-and-task-plural',
   [EntityTabs.CUSTOM_PROPERTIES]: 'label.custom-property-plural',
   [EntityTabs.TERMS]: 'label.term-plural',
@@ -72,7 +73,6 @@ export const TAB_LABEL_MAP = {
   [EntityTabs.INPUT_OUTPUT_PORTS]: 'label.input-output-port-plural',
   [EntityTabs.RELATIONS_GRAPH]: 'label.relations-graph',
   [EntityTabs.DATA_OBSERVABILITY]: 'label.data-observability',
-  [EntityTabs.APPROVAL]: 'label.approval',
 } as Record<EntityTabs, TFunctionKeys>;
 
 export type CustomizeEntityType =
