@@ -1,0 +1,6 @@
+services:
+  execute-migrate-all:
+    image: openmetadata-server:2.0.2-record-bindings
+
+  openmetadata-server:
+    image: openmetadata-server:2.0.2-record-bindings

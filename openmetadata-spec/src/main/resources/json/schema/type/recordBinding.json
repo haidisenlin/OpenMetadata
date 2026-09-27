@@ -1,0 +1,165 @@
+{
+  "$id": "https://open-metadata.org/schema/type/recordBinding.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RecordBinding",
+  "description": "This schema defines a record-level binding between a glossary term and a data asset.",
+  "type": "object",
+  "javaType": "org.openmetadata.schema.type.RecordBinding",
+  "definitions": {
+    "recordLocatorType": {
+      "description": "Strategy used to locate the bound record.",
+      "type": "string",
+      "javaType": "org.openmetadata.schema.type.RecordLocatorType",
+      "enum": ["TABLE_PRIMARY_KEY", "API_RESOURCE"]
+    },
+    "recordLocatorValueType": {
+      "description": "Logical type of a record locator value.",
+      "type": "string",
+      "javaType": "org.openmetadata.schema.type.RecordLocatorValueType",
+      "enum": ["STRING", "NUMBER", "BOOLEAN", "DATE", "DATETIME"]
+    },
+    "recordLocatorKey": {
+      "description": "A table field and value used to locate a record.",
+      "type": "object",
+      "javaType": "org.openmetadata.schema.type.RecordLocatorKey",
+      "properties": {
+        "fieldFqn": {
+          "description": "Fully qualified name of the field used as a record key.",
+          "$ref": "basic.json#/definitions/fullyQualifiedEntityName"
+        },
+        "valueType": {
+          "$ref": "#/definitions/recordLocatorValueType"
+        },
+        "value": {
+          "description": "Typed record key value.",
+          "type": ["string", "number", "boolean"]
+        }
+      },
+      "required": ["fieldFqn", "valueType", "value"],
+      "additionalProperties": false
+    },
+    "recordBusinessKey": {
+      "description": "A value extracted from an API resource using a JSON Pointer.",
+      "type": "object",
+      "javaType": "org.openmetadata.schema.type.RecordBusinessKey",
+      "properties": {
+        "jsonPointer": {
+          "description": "JSON Pointer identifying the business key in the API resource.",
+          "type": "string"
+        },
+        "valueType": {
+          "$ref": "#/definitions/recordLocatorValueType"
+        },
+        "value": {
+          "description": "Typed business key value.",
+          "type": ["string", "number", "boolean"]
+        }
+      },
+      "required": ["jsonPointer", "valueType", "value"],
+      "additionalProperties": false
+    },
+    "recordLocator": {
+      "description": "Stable values used to locate a record within an asset.",
+      "type": "object",
+      "javaType": "org.openmetadata.schema.type.RecordLocator",
+      "properties": {
+        "keys": {
+          "description": "Fields and values that form a table record key.",
+          "type": "array",
+          "default": null,
+          "items": {
+            "$ref": "#/definitions/recordLocatorKey"
+          },
+          "minItems": 1
+        },
+        "environment": {
+          "description": "Environment that contains the API resource.",
+          "type": "string"
+        },
+        "pathParameters": {
+          "description": "Path parameter values used to address the API resource.",
+          "type": "object",
+          "existingJavaType": "java.util.Map<String, String>",
+          "patternProperties": {
+            "^.*$": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "businessKey": {
+          "$ref": "#/definitions/recordBusinessKey"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recordBindingStatus": {
+      "description": "Verification state of a record binding.",
+      "type": "string",
+      "javaType": "org.openmetadata.schema.type.RecordBindingStatus",
+      "enum": ["UNVERIFIED", "VERIFIED", "STALE"]
+    }
+  },
+  "properties": {
+    "id": {
+      "description": "Unique identifier of the record binding.",
+      "$ref": "basic.json#/definitions/uuid"
+    },
+    "term": {
+      "description": "Glossary term bound to the record.",
+      "$ref": "entityReference.json"
+    },
+    "asset": {
+      "description": "Data asset containing the record.",
+      "$ref": "entityReference.json"
+    },
+    "locatorType": {
+      "$ref": "#/definitions/recordLocatorType"
+    },
+    "locator": {
+      "$ref": "#/definitions/recordLocator"
+    },
+    "locatorHash": {
+      "description": "Hash of the canonical record locator.",
+      "type": "string"
+    },
+    "displayName": {
+      "description": "Display name for the bound record.",
+      "type": "string",
+      "maxLength": 256
+    },
+    "status": {
+      "$ref": "#/definitions/recordBindingStatus"
+    },
+    "createdAt": {
+      "description": "Creation time in Unix epoch time milliseconds.",
+      "$ref": "basic.json#/definitions/timestamp"
+    },
+    "createdBy": {
+      "description": "User that created the record binding.",
+      "type": "string"
+    },
+    "updatedAt": {
+      "description": "Last update time in Unix epoch time milliseconds.",
+      "$ref": "basic.json#/definitions/timestamp"
+    },
+    "updatedBy": {
+      "description": "User that last updated the record binding.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "term",
+    "asset",
+    "locatorType",
+    "locator",
+    "locatorHash",
+    "status",
+    "createdAt",
+    "createdBy",
+    "updatedAt",
+    "updatedBy"
+  ],
+  "additionalProperties": false
+}

@@ -79,6 +79,7 @@ class GlossaryTermClassBase {
       EntityTabs.OVERVIEW,
       EntityTabs.GLOSSARY_TERMS,
       EntityTabs.ASSETS,
+      EntityTabs.RECORD_BINDINGS,
       EntityTabs.ACTIVITY_FEED,
       EntityTabs.RELATIONS_GRAPH,
       EntityTabs.CUSTOM_PROPERTIES,

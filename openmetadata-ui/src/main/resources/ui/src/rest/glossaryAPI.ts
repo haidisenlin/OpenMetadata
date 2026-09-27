@@ -22,11 +22,8 @@ import { TabSpecificField } from '../enums/entity.enum';
 import { SearchIndex } from '../enums/search.enum';
 import { AddGlossaryToAssetsRequest } from '../generated/api/addGlossaryToAssetsRequest';
 import { CreateGlossary } from '../generated/api/data/createGlossary';
+import { CreateGlossaryRecordBinding } from '../generated/api/data/createGlossaryRecordBinding';
 import { CreateGlossaryTerm } from '../generated/api/data/createGlossaryTerm';
-import { GlossaryTermRelationGraph } from '../generated/api/data/glossaryTermRelationGraph';
-import { OntologyDataGraph } from '../generated/api/data/ontologyDataGraph';
-import { OntologySummary } from '../generated/api/data/ontologySummary';
-import { UpdateTermRelation } from '../generated/api/data/updateTermRelation';
 import { MoveGlossaryTermRequest } from '../generated/api/tests/moveGlossaryTermRequest';
 import { GlossaryTermRelationType } from '../generated/configuration/glossaryTermRelationSettings';
 import { EntityReference, Glossary } from '../generated/entity/data/glossary';
@@ -34,8 +31,7 @@ import { GlossaryTerm } from '../generated/entity/data/glossaryTerm';
 import { BulkOperationResult } from '../generated/type/bulkOperationResult';
 import { ChangeEvent } from '../generated/type/changeEvent';
 import { EntityHistory } from '../generated/type/entityHistory';
-import { RelationshipTypeUsage } from '../generated/type/relationshipTypeUsage';
-import { TermRelation } from '../generated/type/termRelation';
+import { RecordBinding } from '../generated/type/recordBinding';
 import { ListParams, ListParamsWithOffset } from '../interface/API.interface';
 import { getEncodedFqn } from '../utils/StringUtils';
 import APIClient from './index';
@@ -350,13 +346,61 @@ export const removeAssetsFromGlossaryTerm = async (
 export const getGlossaryTermAssets = async (
   termId: string,
   limit = 100,
-  offset = 0,
-  signal?: AbortSignal
+  offset = 0
 ) => {
   const response = await APIClient.get<PagingResponse<EntityReference[]>>(
     `/glossaryTerms/${termId}/assets`,
-    { params: { limit, offset }, signal }
+    { params: { limit, offset } }
   );
+
+  return response.data;
+};
+
+export interface RecordBindingListParams {
+  limit?: number;
+  offset?: number;
+}
+
+export const getGlossaryTermRecordBindings = async (
+  termId: string,
+  params: RecordBindingListParams
+): Promise<PagingResponse<RecordBinding[]>> => {
+  const response = await APIClient.get<PagingResponse<RecordBinding[]>>(
+    `/glossaryTerms/${termId}/recordBindings`,
+    { params }
+  );
+
+  return response.data;
+};
+
+export const createGlossaryTermRecordBinding = async (
+  termId: string,
+  request: CreateGlossaryRecordBinding
+): Promise<RecordBinding> => {
+  const response = await APIClient.post<
+    CreateGlossaryRecordBinding,
+    AxiosResponse<RecordBinding>
+  >(`/glossaryTerms/${termId}/recordBindings`, request);
+
+  return response.data;
+};
+
+export const deleteGlossaryTermRecordBinding = async (
+  termId: string,
+  bindingId: string
+): Promise<void> => {
+  await APIClient.delete(
+    `/glossaryTerms/${termId}/recordBindings/${bindingId}`
+  );
+};
+
+export const resolveGlossaryRecordBindings = async (
+  request: CreateGlossaryRecordBinding
+): Promise<RecordBinding[]> => {
+  const response = await APIClient.post<
+    CreateGlossaryRecordBinding,
+    AxiosResponse<RecordBinding[]>
+  >('/glossaryTerms/recordBindings/resolve', request);
 
   return response.data;
 };
@@ -367,43 +411,6 @@ export const getGlossaryTermsAssetCounts = async (
   const response = await APIClient.get<Record<string, number>>(
     '/glossaryTerms/assets/counts',
     { params: parent ? { parent } : undefined }
-  );
-
-  return response.data;
-};
-
-export interface OntologyPageParams {
-  parent?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export interface OntologyDataParams extends OntologyPageParams {
-  assetPreviewSize?: number;
-  connectedTermLimit?: number;
-  edgeLimit?: number;
-  lineageEdgeLimit?: number;
-}
-
-export const getOntologySummary = async (
-  params?: OntologyPageParams,
-  signal?: AbortSignal
-): Promise<OntologySummary> => {
-  const response = await APIClient.get<OntologySummary>(
-    '/glossaryTerms/ontology/summary',
-    { params, signal }
-  );
-
-  return response.data;
-};
-
-export const getOntologyDataGraph = async (
-  params?: OntologyDataParams,
-  signal?: AbortSignal
-): Promise<OntologyDataGraph> => {
-  const response = await APIClient.get<OntologyDataGraph>(
-    '/glossaryTerms/ontology/data',
-    { params, signal }
   );
 
   return response.data;
@@ -500,6 +507,25 @@ export const getGlossaryTermChildrenLazy = async (
   return data;
 };
 
+export interface TermRelation {
+  relationType: string;
+  term: EntityReference;
+}
+
+export interface TermRelationGraph {
+  nodes: Array<{
+    id: string;
+    name: string;
+    fullyQualifiedName: string;
+    displayName?: string;
+  }>;
+  edges: Array<{
+    from: string;
+    to: string;
+    relationType: string;
+  }>;
+}
+
 export const addTermRelation = async (
   termId: string,
   termRelation: TermRelation
@@ -529,53 +555,16 @@ export const removeTermRelation = async (
   return response.data;
 };
 
-export const updateTermRelation = async (
-  termId: string,
-  toTermId: string,
-  termRelation: TermRelation
-): Promise<GlossaryTerm> => {
-  const response = await APIClient.put<
-    TermRelation,
-    AxiosResponse<GlossaryTerm>
-  >(`/glossaryTerms/${termId}/relations/${toTermId}`, termRelation);
-
-  return response.data;
-};
-
-export const removeTermRelationById = async (
-  termId: string,
-  relationshipId: string
-): Promise<GlossaryTerm> => {
-  const response = await APIClient.delete<GlossaryTerm>(
-    `/glossaryTerms/${termId}/relations/id/${relationshipId}`
-  );
-
-  return response.data;
-};
-
-export const updateTermRelationById = async (
-  termId: string,
-  relationshipId: string,
-  update: UpdateTermRelation
-): Promise<GlossaryTerm> => {
-  const response = await APIClient.put<
-    UpdateTermRelation,
-    AxiosResponse<GlossaryTerm>
-  >(`/glossaryTerms/${termId}/relations/id/${relationshipId}`, update);
-
-  return response.data;
-};
-
 export const getTermRelationGraph = async (
   termId: string,
   depth = 1,
   relationTypes?: string[]
-): Promise<GlossaryTermRelationGraph> => {
+): Promise<TermRelationGraph> => {
   const params: Record<string, number | string> = { depth };
   if (relationTypes && relationTypes.length > 0) {
     params.relationTypes = relationTypes.join(',');
   }
-  const response = await APIClient.get<GlossaryTermRelationGraph>(
+  const response = await APIClient.get<TermRelationGraph>(
     `/glossaryTerms/${termId}/relationsGraph`,
     { params }
   );
@@ -650,18 +639,7 @@ export const updateGlossaryTermRelationSettings = async (settings: unknown) => {
 export const getRelationTypeUsageCounts = async (): Promise<
   Record<string, number>
 > => {
-  const response = await APIClient.get<RelationshipTypeUsage[]>(
-    '/glossaryTerms/relationTypes/usage'
-  );
+  const response = await APIClient.get('/glossaryTerms/relationTypes/usage');
 
-  return (response.data ?? []).reduce<Record<string, number>>(
-    (counts, usage) => {
-      if (usage.relationshipType?.name) {
-        counts[usage.relationshipType.name] = usage.count ?? 0;
-      }
-
-      return counts;
-    },
-    {}
-  );
+  return response.data;
 };

@@ -55,11 +55,12 @@ const AssetsTabs = withSuspenseFallback(
   )
 );
 
-const GlossaryTermRealizedAssets = withSuspenseFallback(
-  lazy(() =>
-    import(
-      '../../components/Glossary/GlossaryTerms/tabs/GlossaryTermRealizedAssets.component'
-    ).then((module) => ({ default: module.GlossaryTermRealizedAssets }))
+const RecordBindings = withSuspenseFallback(
+  lazy(
+    () =>
+      import(
+        '../../components/Glossary/GlossaryTerms/tabs/RecordBindings/RecordBindings'
+      )
   )
 );
 
@@ -122,8 +123,9 @@ export const getGlossaryTermDetailPageTabs = (
     setPreviewAsset,
   } = props;
 
-  // Pending terms can still reach Approved, while terminal states cannot. The disabled copy must
-  // distinguish a temporary workflow gate from a permanent restriction.
+  // Draft / In Review terms can still reach Approved, so use the actionable
+  // Terminal states (Rejected, Deprecated, Archived,
+  // will not, so use status-neutral copy that does not promise approval.
   const glossaryTermStatus = glossaryTerm.entityStatus ?? EntityStatus.Approved;
   const isTermPendingApproval =
     glossaryTermStatus === EntityStatus.Draft ||
@@ -195,20 +197,17 @@ export const getGlossaryTermDetailPageTabs = (
                 firstPanel={{
                   className: 'glossary-term-resizable-panel-container',
                   children: (
-                    <>
-                      <GlossaryTermRealizedAssets termId={glossaryTerm.id} />
-                      <AssetsTabs
-                        addDisabledMessage={assetsAddDisabledMessage}
-                        assetCount={assetCount}
-                        entityFqn={glossaryTerm.fullyQualifiedName ?? ''}
-                        isSummaryPanelOpen={Boolean(previewAsset)}
-                        permissions={assetPermissions}
-                        ref={assetTabRef}
-                        onAddAsset={() => setAssetModalVisible(true)}
-                        onAssetClick={handleAssetClick}
-                        onRemoveAsset={handleAssetSave}
-                      />
-                    </>
+                    <AssetsTabs
+                      addDisabledMessage={assetsAddDisabledMessage}
+                      assetCount={assetCount}
+                      entityFqn={glossaryTerm.fullyQualifiedName ?? ''}
+                      isSummaryPanelOpen={Boolean(previewAsset)}
+                      permissions={assetPermissions}
+                      ref={assetTabRef}
+                      onAddAsset={() => setAssetModalVisible(true)}
+                      onAssetClick={handleAssetClick}
+                      onRemoveAsset={handleAssetSave}
+                    />
                   ),
                   flex: 0.7,
                   minWidth: 700,
@@ -239,6 +238,16 @@ export const getGlossaryTermDetailPageTabs = (
                 }}
               />
             ),
+          },
+          {
+            label: (
+              <div data-testid="record-bindings">
+                {tabLabelMap[EntityTabs.RECORD_BINDINGS] ??
+                  i18n.t('label.record-plural')}
+              </div>
+            ),
+            key: EntityTabs.RECORD_BINDINGS,
+            children: <RecordBindings key={glossaryTerm.id} />,
           },
           {
             label: (

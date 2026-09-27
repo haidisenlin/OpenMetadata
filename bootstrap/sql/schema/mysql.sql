@@ -352,14 +352,10 @@ CREATE TABLE `entity_relationship` (
   `relationType` varchar(64) NOT NULL DEFAULT '',
   `jsonSchema` varchar(256) DEFAULT NULL,
   `json` json DEFAULT NULL,
-  `relationshipId` varchar(36) DEFAULT NULL,
-  `relationshipTypeId` varchar(36) DEFAULT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`fromId`,`toId`,`relation`,`relationType`),
-  UNIQUE KEY `relationship_id_unique` (`relationshipId`),
   KEY `from_index` (`fromId`,`relation`),
-  KEY `to_index` (`toId`,`relation`),
-  KEY `relationship_type_id_index` (`relationshipTypeId`)
+  KEY `to_index` (`toId`,`relation`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -445,6 +441,34 @@ CREATE TABLE `glossary_entity` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `glossary_record_binding`
+--
+
+DROP TABLE IF EXISTS `glossary_record_binding`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `glossary_record_binding` (
+  `id` varchar(36) NOT NULL,
+  `termId` varchar(36) NOT NULL,
+  `assetId` varchar(36) NOT NULL,
+  `assetType` varchar(64) NOT NULL,
+  `locatorType` varchar(32) NOT NULL,
+  `locator` json NOT NULL,
+  `locatorHash` varchar(64) NOT NULL,
+  `displayName` varchar(256) DEFAULT NULL,
+  `status` varchar(32) NOT NULL,
+  `createdAt` bigint unsigned NOT NULL,
+  `createdBy` varchar(256) NOT NULL,
+  `updatedAt` bigint unsigned NOT NULL,
+  `updatedBy` varchar(256) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `glossary_record_binding_term_asset_locator_key` (`termId`,`assetId`,`locatorType`,`locatorHash`),
+  KEY `idx_glossary_record_binding_term_id` (`termId`),
+  KEY `idx_glossary_record_binding_asset_locator` (`assetId`,`locatorHash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `glossary_term_entity`
 --
 
@@ -463,115 +487,6 @@ CREATE TABLE `glossary_term_entity` (
   UNIQUE KEY `fqnHash` (`fqnHash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Ontology Studio entity and durable authoring tables
---
-
-DROP TABLE IF EXISTS `relationship_type_entity`;
-CREATE TABLE `relationship_type_entity` (
-  `id` varchar(36) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.id'))) STORED NOT NULL,
-  `name` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.name'))) STORED NOT NULL,
-  `fqnHash` varchar(768) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  `json` json NOT NULL,
-  `updatedAt` bigint unsigned GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedAt'))) STORED NOT NULL,
-  `updatedBy` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedBy'))) STORED NOT NULL,
-  `deleted` tinyint(1) GENERATED ALWAYS AS (json_extract(`json`,_utf8mb4'$.deleted')) STORED,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `relationship_type_fqn_hash_unique` (`fqnHash`),
-  KEY `relationship_type_name_index` (`name`),
-  KEY `relationship_type_deleted_index` (`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `ontology_axiom_entity`;
-CREATE TABLE `ontology_axiom_entity` (
-  `id` varchar(36) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.id'))) STORED NOT NULL,
-  `name` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.name'))) STORED NOT NULL,
-  `fqnHash` varchar(768) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  `json` json NOT NULL,
-  `glossaryId` varchar(36) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.glossary.id'))) STORED NOT NULL,
-  `axiomType` varchar(64) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.axiomType'))) STORED NOT NULL,
-  `entityStatus` varchar(32) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.entityStatus'))) STORED NOT NULL,
-  `updatedAt` bigint unsigned GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedAt'))) STORED NOT NULL,
-  `updatedBy` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedBy'))) STORED NOT NULL,
-  `deleted` tinyint(1) GENERATED ALWAYS AS (json_extract(`json`,_utf8mb4'$.deleted')) STORED,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ontology_axiom_fqn_hash_unique` (`fqnHash`),
-  KEY `ontology_axiom_name_index` (`name`),
-  KEY `ontology_axiom_glossary_type_index` (`glossaryId`,`axiomType`),
-  KEY `ontology_axiom_status_index` (`entityStatus`),
-  KEY `ontology_axiom_deleted_index` (`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `ontology_change_set_entity`;
-CREATE TABLE `ontology_change_set_entity` (
-  `id` varchar(36) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.id'))) STORED NOT NULL,
-  `name` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.name'))) STORED NOT NULL,
-  `fqnHash` varchar(768) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  `json` json NOT NULL,
-  `state` varchar(32) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.state'))) STORED NOT NULL,
-  `updatedAt` bigint unsigned GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedAt'))) STORED NOT NULL,
-  `updatedBy` varchar(256) GENERATED ALWAYS AS (json_unquote(json_extract(`json`,_utf8mb4'$.updatedBy'))) STORED NOT NULL,
-  `deleted` tinyint(1) GENERATED ALWAYS AS (json_extract(`json`,_utf8mb4'$.deleted')) STORED,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ontology_change_set_fqn_hash_unique` (`fqnHash`),
-  KEY `ontology_change_set_name_index` (`name`),
-  KEY `ontology_change_set_state_index` (`state`),
-  KEY `ontology_change_set_updated_by_index` (`updatedBy`),
-  KEY `ontology_change_set_deleted_index` (`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `ontology_annex`;
-CREATE TABLE `ontology_annex` (
-  `glossaryId` varchar(36) NOT NULL,
-  `revision` bigint unsigned NOT NULL,
-  `canonicalNQuads` longtext NOT NULL,
-  `checksum` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  `source` varchar(32) NOT NULL,
-  `createdBy` varchar(256) NOT NULL,
-  `createdAt` bigint unsigned NOT NULL,
-  PRIMARY KEY (`glossaryId`,`revision`),
-  UNIQUE KEY `ontology_annex_checksum_unique` (`glossaryId`,`checksum`),
-  KEY `ontology_annex_created_at_index` (`createdAt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `ontology_edit_lock`;
-CREATE TABLE `ontology_edit_lock` (
-  `resourceType` varchar(128) NOT NULL,
-  `resourceId` varchar(36) NOT NULL,
-  `holderId` varchar(36) NOT NULL,
-  `sessionId` varchar(64) NOT NULL,
-  `version` bigint unsigned NOT NULL,
-  `acquiredAt` bigint unsigned NOT NULL,
-  `renewedAt` bigint unsigned NOT NULL,
-  `expiresAt` bigint unsigned NOT NULL,
-  PRIMARY KEY (`resourceType`,`resourceId`),
-  KEY `ontology_edit_lock_expiry_index` (`expiresAt`),
-  KEY `ontology_edit_lock_holder_index` (`holderId`,`sessionId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `rdf_inference_rule`;
-CREATE TABLE `rdf_inference_rule` (
-  `name` varchar(64) NOT NULL,
-  `json` json NOT NULL,
-  `systemRule` tinyint(1) NOT NULL DEFAULT 0,
-  `dirty` tinyint(1) NOT NULL DEFAULT 1,
-  `deleted` tinyint(1) NOT NULL DEFAULT 0,
-  `updatedAt` bigint unsigned NOT NULL,
-  `lastMaterializedAt` bigint unsigned DEFAULT NULL,
-  `lastTripleCount` bigint unsigned NOT NULL DEFAULT 0,
-  `lastError` text DEFAULT NULL,
-  PRIMARY KEY (`name`),
-  KEY `rdf_inference_rule_dirty_index` (`dirty`,`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-DROP TABLE IF EXISTS `rdf_custom_ontology`;
-CREATE TABLE `rdf_custom_ontology` (
-  `name` varchar(64) NOT NULL,
-  `json` json NOT NULL,
-  `updatedAt` bigint unsigned NOT NULL,
-  PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Table structure for table `ingestion_pipeline_entity`

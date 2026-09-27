@@ -1,0 +1,27 @@
+{
+  "$id": "https://open-metadata.org/schema/api/data/createGlossaryRecordBinding.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CreateGlossaryRecordBindingRequest",
+  "description": "Request schema for binding a glossary term to an individual record.",
+  "type": "object",
+  "javaType": "org.openmetadata.schema.api.data.CreateGlossaryRecordBinding",
+  "properties": {
+    "asset": {
+      "description": "Data asset containing the record.",
+      "$ref": "../../type/entityReference.json"
+    },
+    "locatorType": {
+      "$ref": "../../type/recordBinding.json#/definitions/recordLocatorType"
+    },
+    "locator": {
+      "$ref": "../../type/recordBinding.json#/definitions/recordLocator"
+    },
+    "displayName": {
+      "description": "Display name for the bound record.",
+      "type": "string",
+      "maxLength": 256
+    }
+  },
+  "required": ["asset", "locatorType", "locator"],
+  "additionalProperties": false
+}

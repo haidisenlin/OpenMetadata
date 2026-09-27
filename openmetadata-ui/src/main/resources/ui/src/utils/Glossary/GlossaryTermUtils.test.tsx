@@ -99,47 +99,16 @@ const mockProps: GlossaryTermDetailPageTabProps = {
   setPreviewAsset: jest.fn(),
 };
 
-type AssetsTabElementProps = {
-  addDisabledMessage?: React.ReactNode;
-  onAddAsset?: () => void;
-};
-
-const getAssetsTabProps = (
-  tabs: ReturnType<typeof getGlossaryTermDetailPageTabs>
-): AssetsTabElementProps => {
-  const assetsTab = tabs.find((tab) => tab.key === EntityTabs.ASSETS);
-  const resizable = assetsTab?.children as React.ReactElement<{
-    firstPanel: { children: React.ReactNode };
-  }>;
-  const firstPanelChildren = resizable.props.firstPanel.children;
-  const panelChildren =
-    React.isValidElement<{ children?: React.ReactNode }>(firstPanelChildren) &&
-    firstPanelChildren.type === React.Fragment
-      ? firstPanelChildren.props.children
-      : firstPanelChildren;
-  const assetsTabElement = React.Children.toArray(panelChildren).find(
-    (child) =>
-      React.isValidElement<AssetsTabElementProps>(child) &&
-      child.props.onAddAsset !== undefined
-  );
-
-  if (!React.isValidElement<AssetsTabElementProps>(assetsTabElement)) {
-    throw new Error('Assets tab element was not found');
-  }
-
-  return assetsTabElement.props;
-};
-
 describe('getGlossaryTermDetailPageTabs', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('non-version view', () => {
-    it('returns 6 tabs when isVersionView is false', () => {
+    it('returns 7 tabs when isVersionView is false', () => {
       const tabs = getGlossaryTermDetailPageTabs(mockProps);
 
-      expect(tabs).toHaveLength(6);
+      expect(tabs).toHaveLength(7);
     });
 
     it('first tab key is OVERVIEW', () => {
@@ -162,6 +131,14 @@ describe('getGlossaryTermDetailPageTabs', () => {
       expect(tabs.find((t) => t.key === EntityTabs.ASSETS)).toBeDefined();
     });
 
+    it('includes RECORD_BINDINGS tab', () => {
+      const tabs = getGlossaryTermDetailPageTabs(mockProps);
+
+      expect(
+        tabs.find((t) => t.key === EntityTabs.RECORD_BINDINGS)
+      ).toBeDefined();
+    });
+
     it('passes a status message and disables Add on the ASSETS tab when the term is not Approved', () => {
       const tabs = getGlossaryTermDetailPageTabs({
         ...mockProps,
@@ -170,7 +147,11 @@ describe('getGlossaryTermDetailPageTabs', () => {
           entityStatus: EntityStatus.InReview,
         },
       });
-      const assetsTabsProps = getAssetsTabProps(tabs);
+      const assetsTab = tabs.find((t) => t.key === EntityTabs.ASSETS);
+      const resizable = assetsTab?.children as React.ReactElement;
+      const assetsTabsProps = (
+        resizable.props.firstPanel.children as React.ReactElement
+      ).props;
 
       expect(assetsTabsProps.addDisabledMessage).toBeTruthy();
     });
@@ -183,7 +164,11 @@ describe('getGlossaryTermDetailPageTabs', () => {
           entityStatus: EntityStatus.Approved,
         },
       });
-      const assetsTabsProps = getAssetsTabProps(tabs);
+      const assetsTab = tabs.find((t) => t.key === EntityTabs.ASSETS);
+      const resizable = assetsTab?.children as React.ReactElement;
+      const assetsTabsProps = (
+        resizable.props.firstPanel.children as React.ReactElement
+      ).props;
 
       expect(assetsTabsProps.addDisabledMessage).toBeUndefined();
     });
@@ -194,8 +179,11 @@ describe('getGlossaryTermDetailPageTabs', () => {
           ...mockProps,
           glossaryTerm: { ...mockGlossaryTerm, entityStatus },
         });
+        const assetsTab = tabs.find((t) => t.key === EntityTabs.ASSETS);
+        const resizable = assetsTab?.children as React.ReactElement;
 
-        return getAssetsTabProps(tabs).addDisabledMessage;
+        return (resizable.props.firstPanel.children as React.ReactElement).props
+          .addDisabledMessage;
       };
 
       // Pending (can still be approved) vs terminal (Deprecated will not) must
@@ -232,6 +220,7 @@ describe('getGlossaryTermDetailPageTabs', () => {
         EntityTabs.OVERVIEW,
         EntityTabs.GLOSSARY_TERMS,
         EntityTabs.ASSETS,
+        EntityTabs.RECORD_BINDINGS,
         EntityTabs.ACTIVITY_FEED,
         EntityTabs.RELATIONS_GRAPH,
         EntityTabs.CUSTOM_PROPERTIES,
