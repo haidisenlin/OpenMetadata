@@ -115,3 +115,26 @@ SET json = jsonb_set(
     to_jsonb((EXTRACT(EPOCH FROM now()) * 1000)::bigint))
 WHERE extension = 'eventSubscription.Offset'
   AND json ->> 'startingTimestamp' IS NULL;
+
+CREATE TABLE IF NOT EXISTS glossary_record_binding (
+    id VARCHAR(36) NOT NULL,
+    termId VARCHAR(36) NOT NULL,
+    assetId VARCHAR(36) NOT NULL,
+    assetType VARCHAR(64) NOT NULL,
+    locatorType VARCHAR(32) NOT NULL,
+    locator JSONB NOT NULL,
+    locatorHash VARCHAR(64) NOT NULL,
+    displayName VARCHAR(256),
+    status VARCHAR(32) NOT NULL,
+    createdAt BIGINT NOT NULL,
+    createdBy VARCHAR(256) NOT NULL,
+    updatedAt BIGINT NOT NULL,
+    updatedBy VARCHAR(256) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT glossary_record_binding_term_asset_locator_key
+        UNIQUE (termId, assetId, locatorType, locatorHash)
+);
+CREATE INDEX IF NOT EXISTS idx_glossary_record_binding_term_id
+    ON glossary_record_binding(termId);
+CREATE INDEX IF NOT EXISTS idx_glossary_record_binding_asset_locator
+    ON glossary_record_binding(assetId, locatorHash);
