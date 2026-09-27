@@ -156,3 +156,23 @@ UPDATE change_event_consumers
 SET json = JSON_SET(json, '$.startingTimestamp', CAST(UNIX_TIMESTAMP(NOW(3)) * 1000 AS UNSIGNED))
 WHERE extension = 'eventSubscription.Offset'
   AND JSON_EXTRACT(json, '$.startingTimestamp') IS NULL;
+
+CREATE TABLE IF NOT EXISTS glossary_record_binding (
+    id VARCHAR(36) NOT NULL,
+    termId VARCHAR(36) NOT NULL,
+    assetId VARCHAR(36) NOT NULL,
+    assetType VARCHAR(64) NOT NULL,
+    locatorType VARCHAR(32) NOT NULL,
+    locator JSON NOT NULL,
+    locatorHash VARCHAR(64) NOT NULL,
+    displayName VARCHAR(256) NULL,
+    status VARCHAR(32) NOT NULL,
+    createdAt BIGINT UNSIGNED NOT NULL,
+    createdBy VARCHAR(256) NOT NULL,
+    updatedAt BIGINT UNSIGNED NOT NULL,
+    updatedBy VARCHAR(256) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY glossary_record_binding_term_asset_locator_key (termId, assetId, locatorType, locatorHash),
+    INDEX idx_glossary_record_binding_term_id (termId),
+    INDEX idx_glossary_record_binding_asset_locator (assetId, locatorHash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
