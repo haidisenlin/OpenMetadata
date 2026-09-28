@@ -253,6 +253,7 @@ export enum EntityTabs {
   GLOSSARY_TERMS = 'glossary_terms',
   ASSETS = 'assets',
   RECORD_BINDINGS = 'recordBindings',
+  AI_CONTEXT = 'ai_context',
   INPUT_OUTPUT_PORTS = 'input_output_ports',
   EXPRESSION = 'expression',
   INSIGHTS = 'insights',

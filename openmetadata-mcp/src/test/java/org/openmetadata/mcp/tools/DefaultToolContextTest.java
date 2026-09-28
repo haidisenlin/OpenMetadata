@@ -23,6 +23,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.openmetadata.mcp.util.McpResponseTrim;
 import org.openmetadata.schema.entity.app.mcp.McpToolCallUsage;
+import org.openmetadata.schema.utils.JsonUtils;
 import org.openmetadata.service.limits.Limits;
 import org.openmetadata.service.security.AuthorizationException;
 import org.openmetadata.service.security.Authorizer;
@@ -35,6 +36,63 @@ import org.openmetadata.service.security.auth.CatalogSecurityContext;
  * silently warping the dashboard tiles.
  */
 class DefaultToolContextTest {
+
+  @Test
+  void retainsOverrideSchemaDefinitionsWithoutExposingConfiguredValues() {
+    Map<String, Object> schema =
+        Map.of(
+            "properties",
+            Map.of(
+                "contextPersonaOverrides",
+                Map.of(
+                    "type", "array", "items", Map.of("$ref", "termContextPersonaOverride.json"))));
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(schema, "describe_entity_type");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("contextPersonaOverrides", "termContextPersonaOverride.json");
+  }
+
+  @Test
+  void removesPrivateOverrideValuesFromMutationChangeHistories() {
+    Map<String, Object> changes =
+        Map.of(
+            "fieldsUpdated",
+            List.of(
+                Map.of(
+                    "name",
+                    "contextPersonaOverrides",
+                    "oldValue",
+                    "private-old-user",
+                    "newValue",
+                    "private-new-user"),
+                Map.of("name", "contextPersonaOverrides.0.persona", "newValue", "private-persona"),
+                Map.of("name", "description", "newValue", "public description")));
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(Map.of("changeDescription", changes), "patch_entity");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("public description")
+        .doesNotContain("private-", "contextPersonaOverrides");
+  }
+
+  @Test
+  void removesOtherUsersPersonaOverridesFromBothContentForms() {
+    Map<String, Object> term =
+        Map.of(
+            "fullyQualifiedName", "Manufacturing.UPH",
+            "contextPersona", Map.of("name", "uph-show"),
+            "contextPersonaOverrides", List.of(Map.of("user", "private-user")));
+
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(Map.of("results", List.of(term)), "search_metadata");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("uph-show")
+        .doesNotContain("contextPersonaOverrides", "private-user");
+    assertThat(((McpSchema.TextContent) result.content().getFirst()).text())
+        .doesNotContain("contextPersonaOverrides", "private-user");
+  }
 
   @Test
   void unknownToolReturnsValidationCategory() {

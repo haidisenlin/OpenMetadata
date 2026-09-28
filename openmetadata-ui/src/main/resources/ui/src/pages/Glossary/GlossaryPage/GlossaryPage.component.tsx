@@ -511,6 +511,12 @@ const GlossaryPage = () => {
           });
         }
       } catch (error) {
+        // Context editors retain unsaved selections and own their error feedback.
+        if (
+          jsonPatch.some((patch) => patch.path.startsWith('/contextPersona'))
+        ) {
+          throw error;
+        }
         showErrorToast(error as AxiosError);
       }
     },

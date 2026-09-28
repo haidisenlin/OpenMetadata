@@ -727,13 +727,13 @@
         "destructiveHint": false,
         "openWorldHint": false
       },
-      "description": "Get the shared AI context document curated for a persona. With no personaName, uses the caller's active persona. The document can contain many assets and is returned in deterministic parts; call again with part=2, part=3, and so on while hasMore is true. Access is limited to persona members, admins, and bots.",
+      "description": "Get the shared AI context document curated for a persona. With no personaName, uses the caller's active persona. Read tools automatically include caller-specific contexts bound to explicit glossary term matches under personaContexts. Apply each context to its boundTerms. Follow nextCall when status is deferred or context.hasMore is true. If personaContextsTruncated is true, narrow the query or fetch individual glossary terms to retrieve omitted contexts. Bound contexts do not change the active persona and do not grant access. The document is returned in deterministic parts; continue while hasMore is true. Access is limited to persona members, admins, and bots.",
       "parameters": {
         "type": "object",
         "properties": {
           "personaName": {
             "type": "string",
-            "description": "Optional persona fully qualified name. Omit to use the caller's active persona. The persona name comes from get_user_context, which returns the caller's active persona under 'persona.name' — that is the only place to obtain it; do not construct it."
+            "description": "Optional persona fully qualified name. Omit to use the caller's active persona. Obtain the exact name from get_user_context or from personaContexts and its nextCall arguments in a glossary term query result. Do not construct a name or substitute the active persona when a selected term-bound persona is unavailable."
           },
           "format": {
             "type": "string",

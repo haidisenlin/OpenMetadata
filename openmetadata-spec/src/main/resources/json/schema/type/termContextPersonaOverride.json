@@ -1,0 +1,20 @@
+{
+  "$id": "https://open-metadata.org/schema/type/termContextPersonaOverride.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TermContextPersonaOverride",
+  "description": "Persona context selected for a specific authenticated user when a glossary term is matched.",
+  "type": "object",
+  "javaType": "org.openmetadata.schema.type.TermContextPersonaOverride",
+  "properties": {
+    "user": {
+      "description": "User whose UUID identifies this override. Each user may occur only once per glossary term.",
+      "$ref": "entityReference.json"
+    },
+    "persona": {
+      "description": "Persona whose AI context is selected for this user. The binding does not grant access to the Persona.",
+      "$ref": "entityReference.json"
+    }
+  },
+  "required": ["user", "persona"],
+  "additionalProperties": false
+}

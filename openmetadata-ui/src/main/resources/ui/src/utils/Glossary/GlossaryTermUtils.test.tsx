@@ -105,10 +105,10 @@ describe('getGlossaryTermDetailPageTabs', () => {
   });
 
   describe('non-version view', () => {
-    it('returns 7 tabs when isVersionView is false', () => {
+    it('returns 8 tabs when isVersionView is false', () => {
       const tabs = getGlossaryTermDetailPageTabs(mockProps);
 
-      expect(tabs).toHaveLength(7);
+      expect(tabs).toHaveLength(8);
     });
 
     it('first tab key is OVERVIEW', () => {
@@ -218,6 +218,7 @@ describe('getGlossaryTermDetailPageTabs', () => {
 
       expect(keys).toEqual([
         EntityTabs.OVERVIEW,
+        EntityTabs.AI_CONTEXT,
         EntityTabs.GLOSSARY_TERMS,
         EntityTabs.ASSETS,
         EntityTabs.RECORD_BINDINGS,
@@ -229,22 +230,25 @@ describe('getGlossaryTermDetailPageTabs', () => {
   });
 
   describe('version view', () => {
-    it('returns only 1 tab when isVersionView is true', () => {
+    it('returns 2 read-only tabs when isVersionView is true', () => {
       const tabs = getGlossaryTermDetailPageTabs({
         ...mockProps,
         isVersionView: true,
       });
 
-      expect(tabs).toHaveLength(1);
+      expect(tabs).toHaveLength(2);
     });
 
-    it('only OVERVIEW tab is returned in version view', () => {
+    it('OVERVIEW and AI_CONTEXT tabs are returned in version view', () => {
       const tabs = getGlossaryTermDetailPageTabs({
         ...mockProps,
         isVersionView: true,
       });
 
-      expect(tabs[0].key).toBe(EntityTabs.OVERVIEW);
+      expect(tabs.map((tab) => tab.key)).toEqual([
+        EntityTabs.OVERVIEW,
+        EntityTabs.AI_CONTEXT,
+      ]);
     });
 
     it('GLOSSARY_TERMS tab is absent in version view', () => {

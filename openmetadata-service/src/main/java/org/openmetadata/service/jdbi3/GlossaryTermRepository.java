@@ -105,6 +105,7 @@ import org.openmetadata.schema.type.csv.CsvImportResult;
 import org.openmetadata.schema.utils.JsonUtils;
 import org.openmetadata.schema.utils.ResultList;
 import org.openmetadata.service.Entity;
+import org.openmetadata.service.aicontext.GlossaryTermPersonaBindings;
 import org.openmetadata.service.exception.BadRequestException;
 import org.openmetadata.service.exception.CatalogExceptionMessage;
 import org.openmetadata.service.exception.EntityNotFoundException;
@@ -135,8 +136,10 @@ import org.openmetadata.service.workflows.searchIndex.ReindexingUtil;
 public class GlossaryTermRepository extends EntityRepository<GlossaryTerm> {
   private static final String ES_MISSING_DATA =
       "Entity Details is unavailable in Elastic Search. Please reindex to get more Information.";
-  private static final String UPDATE_FIELDS = "references,relatedTerms,synonyms,style";
-  private static final String PATCH_FIELDS = "references,relatedTerms,synonyms,style";
+  private static final String UPDATE_FIELDS =
+      "references,relatedTerms,synonyms,style,contextPersona,contextPersonaOverrides";
+  private static final String PATCH_FIELDS =
+      "references,relatedTerms,synonyms,style,contextPersona,contextPersonaOverrides";
 
   final FeedRepository feedRepository = Entity.getFeedRepository();
   private InheritedFieldEntitySearch inheritedFieldEntitySearch;
@@ -503,6 +506,8 @@ public class GlossaryTermRepository extends EntityRepository<GlossaryTerm> {
     populateTermRelations(entity.getRelatedTerms());
 
     if (!update) {
+      GlossaryTermPersonaBindings.validateAndNormalize(
+          entity, (type, id) -> Entity.getEntityReferenceById(type, id, Include.NON_DELETED));
       checkDuplicateTerms(entity);
     }
 
@@ -2078,9 +2083,30 @@ public class GlossaryTermRepository extends EntityRepository<GlossaryTerm> {
             updateReferences(original, updated);
           });
       compareAndUpdate("relatedTerms", () -> updateRelatedTerms(original, updated));
+      compareAndUpdateAny(
+          this::updateContextPersonaBindings,
+          GlossaryTermPersonaBindings.CONTEXT_PERSONA,
+          GlossaryTermPersonaBindings.CONTEXT_PERSONA_OVERRIDES);
       compareAndUpdateAny(() -> updateNameAndParent(updated), "name", "parent", "glossary");
       // Mutually exclusive cannot be updated
       updated.setMutuallyExclusive(original.getMutuallyExclusive());
+    }
+
+    private void updateContextPersonaBindings() {
+      GlossaryTermPersonaBindings.validateChangedAndNormalize(
+          original,
+          updated,
+          (type, id) -> Entity.getEntityReferenceById(type, id, Include.NON_DELETED));
+      recordChange(
+          GlossaryTermPersonaBindings.CONTEXT_PERSONA,
+          original.getContextPersona(),
+          updated.getContextPersona(),
+          true);
+      recordChange(
+          GlossaryTermPersonaBindings.CONTEXT_PERSONA_OVERRIDES,
+          original.getContextPersonaOverrides(),
+          updated.getContextPersonaOverrides(),
+          true);
     }
 
     /**

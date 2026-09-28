@@ -1,6 +1,7 @@
 package org.openmetadata.mcp.tools;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,7 @@ public class FindContextTool implements McpTool {
     return result;
   }
 
-  private Map<String, Object> render(FoundContext found, String format) {
+  static Map<String, Object> render(FoundContext found, String format) {
     Map<String, Object> result;
     if (FORMAT_JSON.equalsIgnoreCase(format)) {
       result =
@@ -83,6 +84,24 @@ public class FindContextTool implements McpTool {
                   "message",
                   NO_RESULTS_MESSAGE)
               : Map.of("format", "markdown", "content", AIContextMarkdown.renderFound(found));
+    }
+    List<Map<String, Object>> matchedTerms =
+        found.items().stream()
+            .filter(item -> Entity.GLOSSARY_TERM.equals(item.getType().value()))
+            .map(
+                item -> {
+                  Map<String, Object> reference = new LinkedHashMap<>();
+                  reference.put("type", Entity.GLOSSARY_TERM);
+                  reference.put("fullyQualifiedName", item.getFullyQualifiedName());
+                  if (item.getId() != null) {
+                    reference.put("id", item.getId());
+                  }
+                  return reference;
+                })
+            .toList();
+    if (!FORMAT_JSON.equalsIgnoreCase(format) && !matchedTerms.isEmpty()) {
+      result = new LinkedHashMap<>(result);
+      result.put("matchedTerms", matchedTerms);
     }
     return result;
   }

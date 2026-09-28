@@ -141,6 +141,9 @@ public class DefaultToolContext {
               McpToolCallUsage.ErrorCategory.VALIDATION);
       }
 
+      result =
+          TermPersonaContextEnricher.enrich(
+              toolName, McpPersonaPrivacy.sanitize(result), authorizer, securityContext);
       McpSchema.CallToolResult success = buildSuccessResult(result, toolName);
       return new CallToolOutcome(success, elapsedMs(startNanos), resultErrorCategory(result));
     } catch (AuthorizationException ex) {
@@ -415,6 +418,7 @@ public class DefaultToolContext {
    * re-serialization runs only on the rare oversized path.
    */
   static BudgetedResult applyBudget(Object result, String toolName) {
+    result = McpPersonaPrivacy.sanitize(result);
     String serialized = JsonUtils.pojoToJson(result);
     Object payload = result;
     if (serialized.length() > McpResponseTrim.MAX_RESPONSE_CHARS) {

@@ -10,6 +10,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 /**
  * This schema defines te Glossary term entities.
  */
@@ -39,6 +40,16 @@ export interface GlossaryTerm {
      * emits the term as an `owl:Class` and a `skos:Concept`.
      */
     conceptType?: OntologyConceptType;
+    /**
+     * Default Persona whose AI context applies when this glossary term is matched. This binding
+     * does not grant access to the Persona or change a user's active Persona.
+     */
+    contextPersona?: EntityReference;
+    /**
+     * User-specific Persona bindings that take precedence over contextPersona for the
+     * authenticated user.
+     */
+    contextPersonaOverrides?: TermContextPersonaOverride[];
     /**
      * Reference to the data contract for this entity.
      */
@@ -268,6 +279,15 @@ export enum DataType {
  * example, a table has an attribute called database of type EntityReference that captures
  * the relationship of a table `belongs to a` database.
  *
+ * Default Persona whose AI context applies when this glossary term is matched. This binding
+ * does not grant access to the Persona or change a user's active Persona.
+ *
+ * Persona whose AI context is selected for this user. The binding does not grant access to
+ * the Persona.
+ *
+ * User whose UUID identifies this override. Each user may occur only once per glossary
+ * term.
+ *
  * Reference to the data contract for this entity.
  *
  * Glossary that this term belongs to.
@@ -436,6 +456,22 @@ export enum OntologyConceptType {
     Both = "BOTH",
     OwlClass = "OWL_CLASS",
     SkosConcept = "SKOS_CONCEPT",
+}
+
+/**
+ * Persona context selected for a specific authenticated user when a glossary term is
+ * matched.
+ */
+export interface TermContextPersonaOverride {
+    /**
+     * Persona whose AI context is selected for this user. The binding does not grant access to
+     * the Persona.
+     */
+    persona: EntityReference;
+    /**
+     * User whose UUID identifies this override. Each user may occur only once per glossary term.
+     */
+    user: EntityReference;
 }
 
 /**

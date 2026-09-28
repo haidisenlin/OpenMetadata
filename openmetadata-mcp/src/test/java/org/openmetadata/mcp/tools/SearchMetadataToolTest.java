@@ -55,6 +55,21 @@ import org.openmetadata.service.security.policyevaluator.SubjectContext;
 @ExtendWith(MockitoExtension.class)
 class SearchMetadataToolTest {
 
+  @Test
+  void preservesGlossaryTermIdentityForBoundContextResolution() {
+    UUID id = UUID.randomUUID();
+    Map<String, Object> source =
+        Map.of(
+            "id",
+            id.toString(),
+            "entityType",
+            Entity.GLOSSARY_TERM,
+            "fullyQualifiedName",
+            "Manufacturing.UPH");
+
+    assertEquals(id.toString(), SearchMetadataTool.cleanSearchResult(source, List.of()).get("id"));
+  }
+
   private SearchMetadataTool searchMetadataTool;
   private Authorizer authorizer;
   private CatalogSecurityContext securityContext;

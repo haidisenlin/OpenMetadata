@@ -270,6 +270,7 @@ public class GetEntityTool implements McpTool {
     // Clean response to optimize LLM context usage, then bound the columns array so a wide entity
     // stays under the dispatch-level size cap instead of being replaced by an empty stub.
     Map<String, Object> cleaned = cleanEntityResponse(entityData);
+    cleaned.put("entityType", entityType);
     resolveCertification(cleaned);
     Map<String, Object> windowed = applyColumnWindow(cleaned, columnOffset, columnLimit);
     addIncludes(
