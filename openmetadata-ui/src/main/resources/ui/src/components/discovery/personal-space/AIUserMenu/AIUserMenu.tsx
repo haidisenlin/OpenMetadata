@@ -24,7 +24,7 @@ import {
 } from '@untitledui/icons';
 import classNames from 'classnames';
 import { upperCase } from 'lodash';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   Button,
   Menu,
@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthProvider } from '../../../../components/Auth/AuthProviders/AuthProvider';
 import ProfilePicture from '../../../../components/common/ProfilePicture/ProfilePicture';
+import ThemeModeSwitcher from '../../../../components/ThemeModeSwitcher/ThemeModeSwitcher';
 import {
   HELP_ITEMS_ENUM,
   SupportItem,
@@ -43,6 +44,7 @@ import {
 import { EntityReference } from '../../../../generated/entity/type';
 import { useApplicationStore } from '../../../../hooks/useApplicationStore';
 import { usePersonalSpaceStore } from '../../../../hooks/usePersonalSpaceStore';
+import { getVersion } from '../../../../rest/miscAPI';
 import { getEntityName } from '../../../../utils/EntityNameUtils';
 import { languageSelectOptions } from '../../../../utils/i18next/i18nextUtil';
 import i18n from '../../../../utils/i18next/LocalUtil';
@@ -57,7 +59,7 @@ import {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const SUBMENU_POPOVER_CLASS =
-  'tw:w-62 tw:overflow-auto tw:rounded-lg tw:bg-primary tw:shadow-lg ' +
+  'tw:w-62 tw:overflow-auto tw:rounded-lg tw:bg-overlay-surface tw:shadow-lg ' +
   'tw:outline-1 tw:outline-secondary_alt tw:origin-(--trigger-anchor-point) tw:will-change-transform ' +
   'data-[entering]:tw:duration-150 data-[entering]:tw:ease-out data-[entering]:tw:animate-in data-[entering]:tw:fade-in ' +
   'data-[exiting]:tw:duration-100 data-[exiting]:tw:ease-in data-[exiting]:tw:animate-out data-[exiting]:tw:fade-out';
@@ -221,16 +223,37 @@ const AIUserMenu: React.FC<AIUserMenuProps> = ({ collapsed = false }) => {
   const { t } = useTranslation();
   const { onLogoutHandler } = useAuthProvider();
   const openPanel = usePersonalSpaceStore((state) => state.open);
-  const { appVersion, currentUser, selectedPersona, setSelectedPersona } =
-    useApplicationStore();
+  const {
+    appVersion,
+    currentUser,
+    selectedPersona,
+    setAppVersion,
+    setSelectedPersona,
+  } = useApplicationStore();
+
+  useEffect(() => {
+    if (!appVersion) {
+      getVersion()
+        .then((res) => setAppVersion(res.version.replace('-SNAPSHOT', '')))
+        .catch(() => {
+          // version display is non-critical
+        });
+    }
+  }, []);
 
   const userExtras = currentUser as CurrentUserExtras | undefined;
-  const displayName =
-    currentUser?.displayName ??
-    currentUser?.name ??
-    currentUser?.email ??
-    'User';
-  const email = currentUser?.email ?? currentUser?.name ?? '';
+  const displayName = useMemo(
+    () =>
+      currentUser?.displayName ??
+      currentUser?.name ??
+      currentUser?.email ??
+      'User',
+    [currentUser]
+  );
+  const email = useMemo(
+    () => currentUser?.email ?? currentUser?.name ?? '',
+    [currentUser]
+  );
   const currentLocale = i18n.language ?? '';
   const currentLanguage = currentLocale
     ? upperCase(currentLocale.split('-')[0])
@@ -396,11 +419,11 @@ const AIUserMenu: React.FC<AIUserMenuProps> = ({ collapsed = false }) => {
         className={classNames(
           'tw:flex tw:cursor-pointer tw:items-center tw:gap-2 tw:overflow-hidden tw:rounded-[10px] tw:p-0',
           {
-            'tw:bg-primary tw:w-full': !collapsed,
+            'tw:bg-surface tw:w-full': !collapsed,
           }
         )}
         data-testid="ask-ai-user-menu-trigger">
-        <ProfilePicture displayName={displayName} name={email} width="40" />
+        <ProfilePicture displayName={displayName} name={email} size="sm" />
         {!collapsed && (
           <Box
             align="start"
@@ -466,6 +489,9 @@ const AIUserMenu: React.FC<AIUserMenuProps> = ({ collapsed = false }) => {
             <MenuItemRenderer item={item} key={item.id} />
           ))}
         </Dropdown.Menu>
+        <Box className="tw:border-t tw:border-secondary tw:px-4 tw:py-3">
+          <ThemeModeSwitcher className="tw:w-full" />
+        </Box>
       </Dropdown.Popover>
     </Dropdown.Root>
   );
