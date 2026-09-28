@@ -120,7 +120,6 @@ export enum TabSpecificField {
   CHILDREN_COUNT = 'childrenCount',
   DESCENDANT_TEAMS = 'descendantTeams',
   COLUMNS = 'columns',
-  CONTEXT_DEFINITION = 'contextDefinition',
   CUSTOM_METRICS = 'customMetrics',
   CUSTOM_PROPERTIES = 'customProperties',
   DASHBOARD = 'dashboard',
@@ -270,7 +269,6 @@ export enum EntityTabs {
   RELATIONS_GRAPH = 'relations_graph',
   DATA_OBSERVABILITY = 'data_observability',
   RECOGNIZER = 'recognizer',
-  APPROVAL = 'approval',
 }
 
 export enum EntityAction {

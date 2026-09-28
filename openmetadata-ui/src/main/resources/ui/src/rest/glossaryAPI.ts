@@ -34,7 +34,7 @@ import { CSVExportResponse } from '../interface/entity/csv.interface';
 import { VotingDataProps } from '../interface/entity/vote.interface';
 import { MoveGlossaryTermWebsocketResponse } from '../interface/governance/glossary.interface';
 import { getEncodedFqn } from '../utils/StringUtils';
-import APIClient from './axiosClient';
+import APIClient from './index';
 
 export type ListGlossaryTermsParams = ListParams & {
   glossary?: string;
@@ -158,36 +158,27 @@ export const getGlossaryTermsById = async (id: string, params?: ListParams) => {
   return response.data;
 };
 
-// Backend MAX_BATCH_BY_IDS cap; larger requests 400.
-const GLOSSARY_TERMS_BY_IDS_BATCH_SIZE = 100;
-
+// Batch fetch up to 100 glossary terms by Id in a single round-trip.
+// 100 matches the backend MAX_BATCH_BY_IDS cap — going higher would 400
+// (or 431 once the URL clears Jetty's 8 KB header limit). Replaces the
+// per-Id resolution N+1 inside the Relations Graph hook
+// (useOntologyExplorer). Missing/unauthorized Ids are silently dropped
+// by the backend, so callers should compare response length to input.
 export const getGlossaryTermsByIds = async (
   ids: string[],
-  params?: ListParams,
-  signal?: AbortSignal
+  params?: ListParams
 ): Promise<GlossaryTerm[]> => {
   if (ids.length === 0) {
     return [];
   }
+  const response = await APIClient.get<GlossaryTerm[]>('/glossaryTerms/byIds', {
+    params: {
+      ...params,
+      ids: ids.join(','),
+    },
+  });
 
-  const batches: string[][] = [];
-  for (let i = 0; i < ids.length; i += GLOSSARY_TERMS_BY_IDS_BATCH_SIZE) {
-    batches.push(ids.slice(i, i + GLOSSARY_TERMS_BY_IDS_BATCH_SIZE));
-  }
-
-  const responses = await Promise.all(
-    batches.map((batch) =>
-      APIClient.get<GlossaryTerm[]>('/glossaryTerms/byIds', {
-        signal,
-        params: {
-          ...params,
-          ids: batch.join(','),
-        },
-      })
-    )
-  );
-
-  return responses.flatMap((response) => response.data);
+  return response.data;
 };
 
 export const getGlossaryTermByFQN = async (fqn = '', params?: ListParams) => {
