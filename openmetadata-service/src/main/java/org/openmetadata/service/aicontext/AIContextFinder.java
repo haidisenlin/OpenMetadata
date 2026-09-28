@@ -146,6 +146,7 @@ public class AIContextFinder {
     if (!nullOrEmpty(fqn) && kind != null && isApprovedForContext(hit, kind)) {
       item =
           new KnowledgeItem()
+              .withId(resolveKnowledgeId(hit))
               .withType(kind)
               .withName(asString(hit.get("name")))
               .withDisplayName(asString(hit.get("displayName")))

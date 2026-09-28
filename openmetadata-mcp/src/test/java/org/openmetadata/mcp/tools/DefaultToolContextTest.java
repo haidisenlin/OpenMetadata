@@ -14,19 +14,31 @@
 package org.openmetadata.mcp.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.when;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.openmetadata.mcp.util.McpResponseTrim;
 import org.openmetadata.schema.entity.app.mcp.McpToolCallUsage;
+import org.openmetadata.schema.entity.data.GlossaryTerm;
+import org.openmetadata.schema.type.Include;
+import org.openmetadata.schema.utils.JsonUtils;
 import org.openmetadata.service.limits.Limits;
 import org.openmetadata.service.security.AuthorizationException;
 import org.openmetadata.service.security.Authorizer;
 import org.openmetadata.service.security.auth.CatalogSecurityContext;
+import org.openmetadata.service.util.EntityUtil.Fields;
+import org.openmetadata.service.util.EntityUtil.RelationIncludes;
+import org.openmetadata.service.util.RequestEntityCache;
 
 /**
  * Direct coverage for {@link DefaultToolContext}'s Phase 3 outcome construction. The recorder side
@@ -35,6 +47,104 @@ import org.openmetadata.service.security.auth.CatalogSecurityContext;
  * silently warping the dashboard tiles.
  */
 class DefaultToolContextTest {
+
+  @Test
+  void toolInvocationsDoNotReuseOrLeakRequestEntityCache() {
+    UUID id = UUID.randomUUID();
+    var fields = new Fields(Set.of());
+    var includes = RelationIncludes.fromInclude(Include.NON_DELETED);
+    var term = new GlossaryTerm().withId(id).withName("stale");
+    Runnable seed =
+        () ->
+            RequestEntityCache.putById(
+                "glossaryTerm", id, fields, includes, true, term, GlossaryTerm.class);
+    Supplier<Object> cached =
+        () ->
+            RequestEntityCache.getById(
+                "glossaryTerm", id, fields, includes, true, GlossaryTerm.class);
+    try {
+      for (boolean fail : new boolean[] {false, true}) {
+        seed.run();
+        try (var ignored =
+            mockConstruction(
+                GetUserContextTool.class,
+                (tool, context) ->
+                    when(tool.execute(any(), any(), any()))
+                        .thenAnswer(
+                            invocation -> {
+                              assertThat(cached.get()).isNull();
+                              seed.run();
+                              if (fail) {
+                                throw new IllegalArgumentException("invalid request");
+                              }
+                              return Map.of("name", "alice");
+                            }))) {
+          var outcome = invokeWithToolName("get_user_context");
+          assertThat(Boolean.TRUE.equals(outcome.result().isError())).isEqualTo(fail);
+          assertThat(cached.get()).isNull();
+        }
+      }
+    } finally {
+      RequestEntityCache.clear();
+    }
+  }
+
+  @Test
+  void retainsOverrideSchemaDefinitionsWithoutExposingConfiguredValues() {
+    Map<String, Object> schema =
+        Map.of(
+            "properties",
+            Map.of(
+                "contextPersonaOverrides",
+                Map.of(
+                    "type", "array", "items", Map.of("$ref", "termContextPersonaOverride.json"))));
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(schema, "describe_entity_type");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("contextPersonaOverrides", "termContextPersonaOverride.json");
+  }
+
+  @Test
+  void removesPrivateOverrideValuesFromMutationChangeHistories() {
+    Map<String, Object> changes =
+        Map.of(
+            "fieldsUpdated",
+            List.of(
+                Map.of(
+                    "name",
+                    "contextPersonaOverrides",
+                    "oldValue",
+                    "private-old-user",
+                    "newValue",
+                    "private-new-user"),
+                Map.of("name", "contextPersonaOverrides.0.persona", "newValue", "private-persona"),
+                Map.of("name", "description", "newValue", "public description")));
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(Map.of("changeDescription", changes), "patch_entity");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("public description")
+        .doesNotContain("private-", "contextPersonaOverrides");
+  }
+
+  @Test
+  void removesOtherUsersPersonaOverridesFromBothContentForms() {
+    Map<String, Object> term =
+        Map.of(
+            "fullyQualifiedName", "Manufacturing.UPH",
+            "contextPersona", Map.of("name", "uph-show"),
+            "contextPersonaOverrides", List.of(Map.of("user", "private-user")));
+
+    McpSchema.CallToolResult result =
+        DefaultToolContext.buildSuccessResult(Map.of("results", List.of(term)), "search_metadata");
+
+    assertThat(JsonUtils.pojoToJson(result.structuredContent()))
+        .contains("uph-show")
+        .doesNotContain("contextPersonaOverrides", "private-user");
+    assertThat(((McpSchema.TextContent) result.content().getFirst()).text())
+        .doesNotContain("contextPersonaOverrides", "private-user");
+  }
 
   @Test
   void unknownToolReturnsValidationCategory() {

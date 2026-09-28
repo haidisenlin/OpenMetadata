@@ -55,6 +55,15 @@ const AssetsTabs = withSuspenseFallback(
   )
 );
 
+const TermPersonaContext = withSuspenseFallback(
+  lazy(
+    () =>
+      import(
+        '../../components/governance/glossary/TermPersonaContext/TermPersonaContext'
+      )
+  )
+);
+
 const RecordBindings = withSuspenseFallback(
   lazy(
     () =>
@@ -151,6 +160,13 @@ export const getGlossaryTermDetailPageTabs = (
       ),
       key: EntityTabs.OVERVIEW,
       children: <GenericTab type={PageType.GlossaryTerm} />,
+    },
+    {
+      label: (
+        <div data-testid="ai-context">{String(i18n.t('label.ai-context'))}</div>
+      ),
+      key: EntityTabs.AI_CONTEXT,
+      children: <TermPersonaContext key={glossaryTerm.id} />,
     },
     ...(isVersionView
       ? []

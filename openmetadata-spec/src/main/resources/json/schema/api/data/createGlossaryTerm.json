@@ -57,6 +57,19 @@
         "$ref": "../../entity/data/glossaryTerm.json#/definitions/termReference"
       }
     },
+    "contextPersona": {
+      "description": "Default Persona whose AI context applies when this glossary term is matched. This binding does not grant access to the Persona or change a user's active Persona.",
+      "$ref": "../../type/entityReference.json"
+    },
+    "contextPersonaOverrides": {
+      "description": "User-specific Persona bindings that take precedence over contextPersona for the authenticated user.",
+      "type": "array",
+      "items": {
+        "$ref": "../../type/termContextPersonaOverride.json"
+      },
+      "default": [],
+      "maxItems": 100
+    },
     "conceptMappings": {
       "description": "Optional mappings to external concepts (e.g., SKOS alignments).",
       "type": "array",

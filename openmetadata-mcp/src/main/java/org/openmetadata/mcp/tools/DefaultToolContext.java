@@ -20,6 +20,7 @@ import org.openmetadata.service.limits.Limits;
 import org.openmetadata.service.security.AuthorizationException;
 import org.openmetadata.service.security.Authorizer;
 import org.openmetadata.service.security.auth.CatalogSecurityContext;
+import org.openmetadata.service.util.RequestEntityCache;
 
 @Slf4j
 public class DefaultToolContext {
@@ -66,6 +67,9 @@ public class DefaultToolContext {
       String toolName,
       CatalogSecurityContext securityContext,
       McpSchema.CallToolRequest request) {
+    // MCP runs outside the JAX-RS request filters. Pool threads must not retain entity
+    // snapshots from an earlier tool call (including another caller's Persona bindings).
+    RequestEntityCache.clear();
     long startNanos = System.nanoTime();
     LOG.info(
         "Catalog Principal: {} is trying to call the tool: {}",
@@ -141,6 +145,9 @@ public class DefaultToolContext {
               McpToolCallUsage.ErrorCategory.VALIDATION);
       }
 
+      result =
+          TermPersonaContextEnricher.enrich(
+              toolName, McpPersonaPrivacy.sanitize(result), authorizer, securityContext);
       McpSchema.CallToolResult success = buildSuccessResult(result, toolName);
       return new CallToolOutcome(success, elapsedMs(startNanos), resultErrorCategory(result));
     } catch (AuthorizationException ex) {
@@ -161,6 +168,8 @@ public class DefaultToolContext {
                   McpResponseTrim.summarizeFailure(ex, isServerFault(statusCode))),
               statusCode);
       return new CallToolOutcome(errorResult(error), elapsedMs(startNanos), classifyException(ex));
+    } finally {
+      RequestEntityCache.clear();
     }
   }
 
@@ -415,6 +424,7 @@ public class DefaultToolContext {
    * re-serialization runs only on the rare oversized path.
    */
   static BudgetedResult applyBudget(Object result, String toolName) {
+    result = McpPersonaPrivacy.sanitize(result);
     String serialized = JsonUtils.pojoToJson(result);
     Object payload = result;
     if (serialized.length() > McpResponseTrim.MAX_RESPONSE_CHARS) {

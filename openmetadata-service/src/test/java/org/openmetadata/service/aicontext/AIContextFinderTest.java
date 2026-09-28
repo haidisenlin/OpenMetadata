@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.openmetadata.schema.type.aicontext.KnowledgeItem;
 
@@ -76,6 +77,51 @@ class AIContextFinderTest {
     assertNull(
         AIContextFinder.toKnowledgeItem(Map.of("entityType", "table", "fullyQualifiedName", "x")),
         "non-knowledge entityType must not become a KnowledgeItem");
+  }
+
+  @Test
+  void toKnowledgeItem_preservesTheEntityIdAheadOfTheParentId() {
+    final UUID id = UUID.randomUUID();
+    final Map<String, Object> hit = knowledgeHit();
+    hit.put("id", id.toString());
+    hit.put("parentId", UUID.randomUUID().toString());
+
+    assertEquals(id, AIContextFinder.toKnowledgeItem(hit).getId());
+  }
+
+  @Test
+  void toKnowledgeItem_preservesTheParentEntityIdForChunkHits() {
+    final UUID parentId = UUID.randomUUID();
+    final Map<String, Object> hit = knowledgeHit();
+    hit.put("parentId", parentId.toString());
+
+    assertEquals(parentId, AIContextFinder.toKnowledgeItem(hit).getId());
+  }
+
+  @Test
+  void toKnowledgeItem_toleratesMissingAndNullIds() {
+    final Map<String, Object> hit = knowledgeHit();
+    assertNull(AIContextFinder.toKnowledgeItem(hit).getId());
+    hit.put("id", null);
+    hit.put("parentId", null);
+
+    assertNull(AIContextFinder.toKnowledgeItem(hit).getId());
+  }
+
+  @Test
+  void toKnowledgeItem_doesNotInventAnEntityIdForMalformedHits() {
+    final Map<String, Object> hit = knowledgeHit();
+    hit.put("id", "not-a-uuid");
+    assertNull(AIContextFinder.toKnowledgeItem(hit).getId());
+    hit.remove("id");
+    hit.put("parentId", "not-a-uuid");
+
+    assertNull(AIContextFinder.toKnowledgeItem(hit).getId());
+  }
+
+  private static Map<String, Object> knowledgeHit() {
+    return new LinkedHashMap<>(
+        Map.of("entityType", "glossaryTerm", "fullyQualifiedName", "Business.Order"));
   }
 
   @Test

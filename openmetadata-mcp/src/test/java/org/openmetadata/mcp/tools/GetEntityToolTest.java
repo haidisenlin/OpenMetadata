@@ -26,10 +26,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.openmetadata.mcp.util.McpResponseTrim;
+import org.openmetadata.schema.entity.data.GlossaryTerm;
 import org.openmetadata.schema.entity.data.Page;
 import org.openmetadata.schema.type.Include;
 import org.openmetadata.schema.type.MetadataOperation;
@@ -48,6 +51,31 @@ import org.openmetadata.service.security.policyevaluator.ResourceContextInterfac
  * both table and column level.
  */
 class GetEntityToolTest {
+
+  @Test
+  void normalTermDetailsExposeAnExplicitTypeForBoundContextLookup() throws Exception {
+    String fqn = "Manufacturing.UPH";
+    GlossaryTerm term =
+        new GlossaryTerm().withId(UUID.randomUUID()).withName("UPH").withFullyQualifiedName(fqn);
+    CatalogSecurityContext security =
+        new CatalogSecurityContext(() -> "reader", "https", "Bearer", Set.of());
+    try (MockedStatic<Entity> entities = mockStatic(Entity.class)) {
+      entities
+          .when(() -> Entity.getEntityByName(Entity.GLOSSARY_TERM, fqn, "*", null))
+          .thenReturn(term);
+
+      Map<String, Object> result =
+          new GetEntityTool()
+              .execute(
+                  mock(Authorizer.class),
+                  security,
+                  Map.of("entityType", Entity.GLOSSARY_TERM, "fqn", fqn));
+
+      assertThat(result)
+          .containsEntry("entityType", Entity.GLOSSARY_TERM)
+          .containsEntry("fullyQualifiedName", fqn);
+    }
+  }
 
   @Test
   void contentOnlyPreservesViewBasicAuthorization() throws Exception {

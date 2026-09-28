@@ -77,6 +77,7 @@ class GlossaryTermClassBase {
   public getGlossaryTermDetailPageTabsIds(): Tab[] {
     return [
       EntityTabs.OVERVIEW,
+      EntityTabs.AI_CONTEXT,
       EntityTabs.GLOSSARY_TERMS,
       EntityTabs.ASSETS,
       EntityTabs.RECORD_BINDINGS,

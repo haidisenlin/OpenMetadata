@@ -521,6 +521,9 @@ public class SearchMetadataTool implements McpTool {
       Map<String, Object> source, List<String> requestedFields) {
     Map<String, Object> result = new HashMap<>();
 
+    if (Entity.GLOSSARY_TERM.equals(source.get("entityType")) && source.containsKey("id")) {
+      result.put("id", source.get("id"));
+    }
     // Always include essential fields
     for (String field : ESSENTIAL_FIELDS_ONLY) {
       if (source.containsKey(field)) {

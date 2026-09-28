@@ -94,9 +94,7 @@ public class FindRecordRelatedAssetsTool implements McpTool {
             continue;
           }
           try {
-            authorize(authorizer, securityContext, type, null, fqn);
-            EntityInterface asset =
-                CommonUtils.readEntityForCaller(type, fqn, "tags", Include.NON_DELETED, securityContext);
+            EntityInterface asset = readVisibleAsset(authorizer, securityContext, type, fqn);
             List<EntityReference> matched = matchedTerms(asset.getTags(), terms);
             if (!matched.isEmpty()) {
               assets.add(assetEvidence(asset, matched));
@@ -115,7 +113,12 @@ public class FindRecordRelatedAssetsTool implements McpTool {
             continue;
           }
           try {
-            authorize(authorizer, securityContext, asset.getType(), asset.getId(), asset.getFullyQualifiedName());
+            authorize(
+                authorizer,
+                securityContext,
+                asset.getType(),
+                asset.getId(),
+                asset.getFullyQualifiedName());
             Map<String, Object> evidence = new LinkedHashMap<>();
             evidence.put("binding", record);
             evidence.put("association", "RECORD_BINDING");
@@ -125,7 +128,8 @@ public class FindRecordRelatedAssetsTool implements McpTool {
           }
         }
         if (page.getPaging().getTotal() > recordOffset + page.getData().size()) {
-          recordPages.add(Map.of("termId", term.getId(), "nextRecordOffset", recordOffset + recordLimit));
+          recordPages.add(
+              Map.of("termId", term.getId(), "nextRecordOffset", recordOffset + recordLimit));
         }
       }
     }
@@ -137,20 +141,32 @@ public class FindRecordRelatedAssetsTool implements McpTool {
     }
     result.put("recordPages", recordPages);
     result.put("truncated", truncated || assetsHasMore || !recordPages.isEmpty());
-    result.put("message", sourceBindings.isEmpty()
-        ? "No visible exact record binding found. Check the source asset and typed locator; descriptions are not used as a fallback."
-        : "Bindings and directed glossary relations are metadata evidence. Source records and API responses were not fetched. Preserve UNVERIFIED/STALE status; a tag associates an asset, not every row in it.");
+    result.put(
+        "message",
+        sourceBindings.isEmpty()
+            ? "No visible exact record binding found. Check the source asset and typed locator; descriptions are not used as a fallback."
+            : "Bindings and directed glossary relations are metadata evidence. Source records and API responses were not fetched. Preserve UNVERIFIED/STALE status; a tag associates an asset, not every row in it.");
     return result;
   }
 
   static Map<String, Object> assetSearchParams(
       List<EntityReference> terms, String targetType, int limit, int offset) {
-    List<String> names = terms.stream().map(EntityReference::getFullyQualifiedName)
-        .map(name -> name.toLowerCase(Locale.ROOT)).distinct().toList();
-    List<String> types = targetType == null ? List.of(Entity.TABLE, Entity.API_ENDPOINT) : List.of(targetType);
-    Map<String, Object> filter = Map.of("bool", Map.of("filter", List.of(
-        Map.of("terms", Map.of("tags.tagFQN", names)),
-        Map.of("terms", Map.of("entityType", types)))));
+    List<String> names =
+        terms.stream()
+            .map(EntityReference::getFullyQualifiedName)
+            .map(name -> name.toLowerCase(Locale.ROOT))
+            .distinct()
+            .toList();
+    List<String> types =
+        targetType == null ? List.of(Entity.TABLE, Entity.API_ENDPOINT) : List.of(targetType);
+    Map<String, Object> filter =
+        Map.of(
+            "bool",
+            Map.of(
+                "filter",
+                List.of(
+                    Map.of("terms", Map.of("tags.tagFQN", names)),
+                    Map.of("terms", Map.of("entityType", types)))));
     return Map.of("query", "*", "queryFilter", filter, "size", limit, "from", offset);
   }
 
@@ -158,9 +174,15 @@ public class FindRecordRelatedAssetsTool implements McpTool {
     if (tags == null) {
       return List.of();
     }
-    return terms.values().stream().filter(term -> tags.stream().anyMatch(tag ->
-        tag.getSource() == TagLabel.TagSource.GLOSSARY
-            && term.getFullyQualifiedName().equals(tag.getTagFQN()))).toList();
+    return terms.values().stream()
+        .filter(
+            term ->
+                tags.stream()
+                    .anyMatch(
+                        tag ->
+                            tag.getSource() == TagLabel.TagSource.GLOSSARY
+                                && term.getFullyQualifiedName().equals(tag.getTagFQN())))
+        .toList();
   }
 
   static Map<String, Object> assetEvidence(EntityInterface asset, List<EntityReference> terms) {
@@ -175,8 +197,18 @@ public class FindRecordRelatedAssetsTool implements McpTool {
     return evidence;
   }
 
-  private static void authorize(Authorizer authorizer, CatalogSecurityContext context, String type, UUID id, String fqn) {
-    authorizer.authorize(context, new OperationContext(type, MetadataOperation.VIEW_ALL), new ResourceContext<>(type, id, fqn));
+  static EntityInterface readVisibleAsset(
+      Authorizer authorizer, CatalogSecurityContext context, String type, String fqn) {
+    authorize(authorizer, context, type, null, fqn);
+    return Entity.getEntityByName(type, fqn, "tags", Include.NON_DELETED);
+  }
+
+  private static void authorize(
+      Authorizer authorizer, CatalogSecurityContext context, String type, UUID id, String fqn) {
+    authorizer.authorize(
+        context,
+        new OperationContext(type, MetadataOperation.VIEW_ALL),
+        new ResourceContext<>(type, id, fqn));
   }
 
   private static int boundedInt(Map<String, Object> params, String key, int defaultValue, int max) {
@@ -196,7 +228,12 @@ public class FindRecordRelatedAssetsTool implements McpTool {
   }
 
   @Override
-  public Map<String, Object> execute(Authorizer authorizer, Limits limits, CatalogSecurityContext context, Map<String, Object> params) throws IOException {
+  public Map<String, Object> execute(
+      Authorizer authorizer,
+      Limits limits,
+      CatalogSecurityContext context,
+      Map<String, Object> params)
+      throws IOException {
     return execute(authorizer, context, params);
   }
 }
