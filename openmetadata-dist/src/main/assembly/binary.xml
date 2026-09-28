@@ -34,7 +34,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}./conf</directory>
+            <directory>${project.basedir}/../conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>*</include>
@@ -42,7 +42,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${project.basedir}./bin</directory>
+            <directory>${project.basedir}/../bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*</include>
@@ -51,7 +51,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${project.basedir}./bootstrap</directory>
+            <directory>${project.basedir}/../bootstrap</directory>
             <outputDirectory>bootstrap</outputDirectory>
         </fileSet>
 
@@ -60,7 +60,7 @@
 
     <files>
         <file>
-            <source>${project.basedir}./README.md</source>
+            <source>${project.basedir}/../README.md</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

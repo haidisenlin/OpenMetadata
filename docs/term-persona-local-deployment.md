@@ -61,3 +61,33 @@ The feature branch is published to the requested fork. Pushing the separate
 lacks `workflow` scope and that history contains different workflow files.
 Keep the deployment branch locally; no workflow files were changed to bypass
 that restriction.
+
+## Verified running deployment — 2026-09-28
+
+- URL: http://localhost:8585
+- Container: `openmetadata_server`, Docker health check `healthy`.
+- Image: `openmetadata-server:2.0.2-term-persona-d10edeae`.
+- Runtime revision: `d10edeae9523056ac9534a99c5ba2e5ad5c179ec`.
+- 157 Java tests, 49 UI unit tests, and 3 browser scenarios passed.
+- Live REST/MCP checks passed: bindings persist, the authenticated user's
+  override wins, duplicate users are rejected, removing the override immediately
+  restores the term default, and clearing all bindings removes the term context.
+- Temporary test entities, browser user, and saved test credentials were removed.
+- MySQL, Elasticsearch and ingestion containers were not recreated.
+
+The active Compose override in the original workspace is
+`docker/docker-compose-quickstart/docker-compose.record-bindings.yml` and now
+references the new image. The deployment worktree's override remains a source
+example; it is not the active configuration.
+
+For rollback, set the two image references in the active override back to
+`openmetadata-server:2.0.2-record-bindings`, then, from the original workspace, run:
+
+```sh
+docker compose -p docker-compose-quickstart \
+  -f docker/docker-compose-quickstart/docker-compose.yml \
+  -f docker/docker-compose-quickstart/docker-compose.record-bindings.yml \
+  up -d --no-deps openmetadata-server
+```
+
+Do not run `down -v`; no database downgrade or migration is needed for this change.
